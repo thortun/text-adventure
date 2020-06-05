@@ -1,0 +1,20 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+	/* Scale canvas with resize attribute to full size */
+	canvas[resize] {
+	   width: 100%;
+	   height: 100%;
+	}
+</style>
+<!-- Load the Paper.js library -->
+<script type="text/javascript" src="{% static 'paper/paper-full.js' %}"></script>
+<!-- Load external PaperScript and associate it with myCanvas -->
+<script type="text/paperscript" src="{% static 'adventuregui/canvas.js' %}" canvas="myCanvas"></script>
+</head>
+<body>
+	<canvas id="myCanvas" resize></canvas>
+</body>
+</html>
