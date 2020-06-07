@@ -53,6 +53,7 @@ function newExitNode(position){
 		fillColor : 'black',	// Fill color
 		exit : [],				// Reference to the exit node
 		});
+	
 	exitNode.onMouseEnter = function(event){
 		this.fillColor = 'red'; 
 	}
@@ -66,7 +67,7 @@ function newExitNode(position){
 		dragPath = new Path([startPos, endPos]);
 		dragPath.strokeColor = 'black';
 		dragPath.strokeWidth = 3;
-		startExitNode = this;	// Set start dragging
+		startExitNode = this;							// Set start dragging
 	}
 	exitNode.onMouseDrag = function(event){
 		if(dragPath != null){
