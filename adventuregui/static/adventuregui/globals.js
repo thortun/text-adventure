@@ -1,0 +1,3 @@
+window.globals = {
+	editObject : null,
+}

@@ -2,19 +2,86 @@
 <!DOCTYPE html>
 <html>
 <head>
-<style>
-	/* Scale canvas with resize attribute to full size */
-	canvas[resize] {
-	   width: 100%;
-	   height: 100%;
-	}
-</style>
-<!-- Load the Paper.js library -->
-<script type="text/javascript" src="{% static 'paper/paper-full.js' %}"></script>
-<!-- Load external PaperScript and associate it with myCanvas -->
-<script type="text/paperscript" src="{% static 'adventuregui/canvas.js' %}" canvas="myCanvas"></script>
+	<style>
+		#container{
+			display: flex;
+			flex-direction: row;
+		}
+		/* Scale canvas with resize attribute to full size */
+		#sidebarContainer{
+			display : flex;
+			flex-direction: column;
+			flex-basis: 40%;
+			margin : 10px;
+			background-color:'red';
+		}
+		#sidebarTabsContainer{
+			display : flex;
+			flex-direction : row;
+			min-height: 40px;
+		}
+		#sidebarContent{
+			display: flex;
+			flex-direction: column;
+		}
+		#canvasContainer{
+			flex-basis : 60%;
+		}
+		#roomView{
+			display : flex;
+			flex-direction: column;
+		}
+		canvas[resize] {
+		   height : 100%;
+		   width : 100%;
+		   border-width : 3;
+		   border-style : solid;
+		}
+		.tab{
+			background-color : #edbb32;
+			min-width: 100px;
+		}
+	</style>
+	<script type="text/javascript" src="{% static 'paper/paper-full.js' %}"></script>
+	<script type="text/javascript" src="{% static 'adventuregui/globals.js' %}"></script>
+	<script type="text/javascript" src="{% static 'adventuregui/tabcontroller.js'%}"></script>
+	<script type="text/paperscript" src="{% static 'adventuregui/canvas.js' %}" canvas="myCanvas"></script>
+	<script>
+		function saveRoomInfo(){
+			var editObject = window.globals.editObject;									// Get object being edited
+			editObject.name = document.getElementById("nodeTitle").value;				// Set the name
+			editObject.description = document.getElementById("nodeDescription").value;	// Set the description.
+		}
+	</script>
 </head>
 <body>
-	<canvas id="myCanvas" resize></canvas>
+	<div id="container">
+		<div id="sidebarContainer">
+			<div id="sidebarTabsContainer">
+				<button class="tab" id="roomViewButton">Room</button>
+				<button class="tab" id="objectsViewButton">Objects</button>
+				<button class="tab" id="playersViewButton">Players</button>
+			</div>
+			<div id="sidebarContent">
+				<div id="roomView" class="sidebarView">
+					<div>
+						Room Name:
+						<input id="nodeTitle"></input>
+					</div>
+					<textarea id="nodeDescription"></textarea>
+					<button onClick="saveRoomInfo()">Save</button>
+				</div>
+				<div id="objectsView" class="sidebarView">
+					<button id="newObjectButton">+</button>
+				</div>
+				<div id="playersView" class="sidebarView">
+
+				</div>
+			</div>
+		</div>
+		<div id="canvasContainer">
+			<canvas id="myCanvas" resize></canvas>
+		</div>
+	</div>
 </body>
 </html>
