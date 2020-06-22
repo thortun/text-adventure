@@ -1,4 +1,4 @@
-var colorPalette = {	// https://flatuicolors.com/palette/gb
+var colorPalette = {		// https://flatuicolors.com/palette/gb
 	blue 		: "#00a8ff",
 	dblue 		: "#0097e6",
 	purple 		: "#9c88ff",
@@ -49,72 +49,6 @@ function newDragRectangle(position){
 	return dragRectangle;
 }
 
-function newEmptyNode(position){
-	var backgroundPath = new Path.Rectangle({
-		center : new Point(position),
-		size : new Size(100, 100),
-		strokeColor : 'black',
-		fillColor : colorPalette.orange,
-		strokeWidth : 3,
-	});
-	/* OTHER PROPERTIES */
-	backgroundPath.name = "New Room";
-	backgroundPath.description = "Description.";
-
-	backgroundPath.onMouseDown = function(event){
-		globals.editObject = this;
-		document.getElementById("nodeTitle").value = backgroundPath.name;
-		document.getElementById("nodeDescription").value = backgroundPath.description;
-	}
-
-	backgroundPath.onMouseDrag = function(event){
-		if(selectArray.length > 0 && selectArray.includes(backgroundPath.parent)){
-			for(var i = 0; i < selectArray.length; i++){
-				selectArray[i].translate(event.delta);
-				selectArray[i].update();
-			}
-		}
-		else{
-			for(var i = 0; i < selectArray.length; i++){
-				selectArray[i].onDeselect();
-			}
-			selectArray = [];
-			backgroundPath.parent.translate(event.delta);
-			backgroundPath.parent.update();
-		}
-	}
-
-	var nodeGroup = new Group([backgroundPath]);
-	nodeGroup.background = backgroundPath;
-	nodeGroup.exitNodes = [];
-
-	nodeGroup.update = function(){
-		for(var i = 0; i < nodeGroup.exitNodes.length; i++){
-			nodeGroup.exitNodes[i].update();
-		}
-	}
-
-	nodeGroup.onSelect = function(){
-		nodeGroup.background.fillColor = colorPalette.dorange;
-	}
-
-	nodeGroup.onDeselect = function(){
-		nodeGroup.background.fillColor = colorPalette.orange;
-	}
-
-	var east = newExitNode(new Point(backgroundPath.bounds.rightCenter));
-	var north = newExitNode(new Point(backgroundPath.bounds.topCenter));
-	var west = newExitNode(new Point(backgroundPath.bounds.leftCenter));
-	var south = newExitNode(new Point(backgroundPath.bounds.bottomCenter));
-	nodeGroup.exitNodes.push(east, north, west, south);
-	nodeGroup.addChildren([east, north, west, south]);
-	allExits.push(east, north, west, south);
-	nodeLayer.addChild(nodeGroup);
-	allNodes.push(nodeGroup);
-	nodeGroup.scale(zoomFactor);
-	return nodeGroup;
-}
-
 function newRoom(roomData){
 	var roomPosition = new Point(roomData.position[0], roomData.position[1]);
 	var backgroundPath = new Path.Rectangle({
@@ -128,10 +62,12 @@ function newRoom(roomData){
 	backgroundPath.name = roomData.name || "New Room";
 	backgroundPath.description = roomData.description || "Description.";
 
-	backgroundPath.onMouseDown = function(event){
-		globals.editObject = this;
-		document.getElementById("nodeTitle").value = backgroundPath.name;
-		document.getElementById("nodeDescription").value = backgroundPath.description;
+	backgroundPath.onMouseUp = function(event){
+		if(event.target === this){
+			globals.editObject = this;
+			document.getElementById("nodeTitle").value = backgroundPath.name;
+			document.getElementById("nodeDescription").value = backgroundPath.description;
+		}
 	}
 
 	backgroundPath.onMouseDrag = function(event){
@@ -209,19 +145,25 @@ function newEmptyExit(position){
 	}
 
 	exitNode.onMouseDrag = function(event){
-		if(dragPath != null){
-			dragPath.segments = [exitNode.position, event.point];
-			var nearestExit = getNearestExitNode(event.point);
-			var dist = (nearestExit.position - event.point).length;
+		if(event.modifiers.shift){
+			exitNode.translate(event.delta);	// Move the node
+
+		}
+		else{
+			if(dragPath != null){
+				dragPath.segments = [exitNode.position, event.point];
+				var nearestExit = getNearestExitNode(event.point);
+			}
 		}
 	}
 
 	exitNode.onMouseUp = function(event){
+		var PATH_SNAP = 20;
 		var nearestExit = getNearestExitNode(event.point);
-		if(nearestExit != null & nearestExit != exitNode & nearestExit.parent != exitNode.parent){
+		var d = (nearestExit.position - event.point).length;
+		if(nearestExit != null & nearestExit != exitNode & nearestExit.parent != exitNode.parent & d <= PATH_SNAP){
 			linkExits(exitNode, nearestExit);
 		}
-
 		if(dragPath != null){
 			dragPath.remove();
 			dragPath = null;
@@ -295,14 +237,14 @@ function getNearestExitNode(position){
 	return nearNode;
 }
 
-function genNewNodeButton(view){
+function genNewRoomButton(view){
 	button = new Path.Rectangle({
 		size : new Size(150, 30),
 		fillColor : 'black',
 		bottomLeft : view.bounds.bottomLeft,
 	});
 	button.onMouseDown = function(event){
-		newNode(view.bounds.center);
+		newRoom({position : [view.bounds.center.x, view.bounds.center.y]});
 	}
 	return button;
 }
@@ -408,11 +350,15 @@ function loadFromFile(obj){
 	}
 }
 
+function saveState(){
+	
+}
+
 var backgroundLayer = newBackgroundLayer();
 var nodeLayer = new Layer();
 var UILayer = new Layer();
 
-genNewNodeButton(view);
+genNewRoomButton(view);
 var canvas = document.getElementById("myCanvas").addEventListener('wheel', function(event){zoomLayer(nodeLayer, event);})
 
 var file = {
