@@ -26,6 +26,7 @@ var dragPath = null;		// Ephemeral path indicating dragging
 var zoomFactor = 1;			// Current zoom level
 var selectArray = [];		// Array of selected nodes
 var allNodes = [];
+var startRoom = null;		// The start room
 
 function newDragRectangle(position){
 	var dragRectangle = new Path.Rectangle({
@@ -55,7 +56,7 @@ function newRoom(roomData){
 		center : roomPosition,
 		size : new Size(100, 100),
 		strokeColor : 'black',
-		fillColor : colorPalette.orange,
+		fillColor : colorPalette.dorange,
 		strokeWidth : 3,
 	});
 	/* OTHER PROPERTIES */
@@ -87,37 +88,38 @@ function newRoom(roomData){
 		}
 	}
 
-	var nodeGroup = new Group([backgroundPath]);
-	nodeGroup.background = backgroundPath;
+	var newRoom = new Group([backgroundPath]);
+	newRoom.roomId = roomData.roomId;
+	newRoom.background = backgroundPath;
 
-	nodeGroup.update = function(){
-		nodeGroup.eastExit.update();
-		nodeGroup.northExit.update();
-		nodeGroup.westExit.update();
-		nodeGroup.southExit.update();
+	newRoom.update = function(){
+		newRoom.eastExit.update();
+		newRoom.northExit.update();
+		newRoom.westExit.update();
+		newRoom.southExit.update();
 	}
 
-	nodeGroup.onSelect = function(){
-		nodeGroup.background.fillColor = colorPalette.dorange;
+	newRoom.onSelect = function(){
+		newRoom.background.fillColor = colorPalette.orange;
 	}
 
-	nodeGroup.onDeselect = function(){
-		nodeGroup.background.fillColor = colorPalette.orange;
+	newRoom.onDeselect = function(){
+		newRoom.background.fillColor = colorPalette.dorange;
 	}
 
-	nodeGroup.eastExit = newEmptyExit(new Point(backgroundPath.bounds.rightCenter));
-	nodeGroup.northExit = newEmptyExit(new Point(backgroundPath.bounds.topCenter));
-	nodeGroup.westExit = newEmptyExit(new Point(backgroundPath.bounds.leftCenter));
-	nodeGroup.southExit = newEmptyExit(new Point(backgroundPath.bounds.bottomCenter));
-	nodeGroup.addChildren([nodeGroup.eastExit, nodeGroup.northExit, nodeGroup.westExit, nodeGroup.southExit]);
-	allExits.push(nodeGroup.eastExit, nodeGroup.northExit, nodeGroup.westExit, nodeGroup.southExit);
-	nodeLayer.addChild(nodeGroup);
-	allNodes.push(nodeGroup);
-	nodeGroup.scale(zoomFactor);
-	return nodeGroup;
+	newRoom.eastExit = newEmptyExit(new Point(backgroundPath.bounds.rightCenter), newRoom);
+	newRoom.northExit = newEmptyExit(new Point(backgroundPath.bounds.topCenter), newRoom);
+	newRoom.westExit = newEmptyExit(new Point(backgroundPath.bounds.leftCenter), newRoom);
+	newRoom.southExit = newEmptyExit(new Point(backgroundPath.bounds.bottomCenter), newRoom);
+	newRoom.addChildren([newRoom.eastExit, newRoom.northExit, newRoom.westExit, newRoom.southExit]);
+	allExits.push(newRoom.eastExit, newRoom.northExit, newRoom.westExit, newRoom.southExit);
+	nodeLayer.addChild(newRoom);
+	allNodes.push(newRoom);
+	newRoom.scale(zoomFactor);
+	return newRoom;
 }
 
-function newEmptyExit(position){
+function newEmptyExit(position, parentRoom){
 	var exitNode = new Path.Circle({
 		center : position,				// Position of exit node on canvas
 		radius : 10,					// Size of canvas
@@ -126,13 +128,14 @@ function newEmptyExit(position){
 	exitNode.exit = null;				// No exit yet
 	exitNode.entrance = null;			// No entrance yet
 	exitNode.exitPath = null;			// No path yet;
+	exitNode.room = parentRoom;				// Room the exit is attached to
 
 	exitNode.onMouseEnter = function(event){
 		this.fillColor = colorPalette.ddark;
 	}
 
 	exitNode.onMouseLeave = function(event){
-		this.fillColor = colorPalette.dark; 
+		this.fillColor = colorPalette.dark;
 	}
 
 	exitNode.onMouseDown = function(event){
@@ -322,7 +325,10 @@ function loadFromFile(obj){
 	/* Setup room nodes */
 	for(var i = 0; i < obj.rooms.length; i++){
 		var createdRoom = newRoom(obj.rooms[i]);
-		roomDict[obj.rooms[i]._id] = createdRoom;
+		if(obj.rooms[i].roomId == obj.startRoomId){
+			startRoom = createdRoom;
+		}
+		roomDict[obj.rooms[i].roomId] = createdRoom;
 		roomList.push(createdRoom);
 	}
 	/* Setup exit edges */
@@ -351,21 +357,31 @@ function loadFromFile(obj){
 }
 
 function saveState(){
-	
+	roomDict = {};	// Dictionary of rooms based on ID
+	// Do a breadth-first traverse over all the nodes
+	var queue = [startRoom];
+	while(queue.length > 0){
+		var currentRoom = queue.pop();
+		exits = ["eastExit", "northExit", "westExit", "southExit"];
+		for(var i = 0; i < exits.length; i++){
+			if(currentRoom[exits[i]].exit){
+				queue.push(currentRoom[exits[i]].exit.room);
+				console.log(currentRoom[exits[i]].exit.room.roomName);
+			}
+		}
+	}
 }
 
 var backgroundLayer = newBackgroundLayer();
 var nodeLayer = new Layer();
 var UILayer = new Layer();
-
 genNewRoomButton(view);
-var canvas = document.getElementById("myCanvas").addEventListener('wheel', function(event){zoomLayer(nodeLayer, event);})
-
+document.getElementById("myCanvas").addEventListener('wheel', function(event){zoomLayer(nodeLayer, event);});
 var file = {
 	rooms : [
 		{
 			name : "Forest Floor",
-			_id : "0",
+			roomId : "0",
 			position : [200, 200],
 			eastExit : {
 				roomLink : "1",				// The id of the room this exit linked to
@@ -374,7 +390,7 @@ var file = {
 		},
 		{
 			name : "Forest Passage",
-			_id : "1",
+			roomId : "1",
 			position : [400, 200],
 			southExit : {
 				roomLink : "2",
@@ -383,7 +399,7 @@ var file = {
 		},
 		{
 			name : "Forest Exit",
-			_id : "2",
+			roomId : "2",
 			position : [400, 400],
 		}
 	],
@@ -391,3 +407,4 @@ var file = {
 }
 
 loadFromFile(file);
+saveState();
